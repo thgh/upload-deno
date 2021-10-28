@@ -53,7 +53,6 @@ app.use(async (ctx: Context) => {
           file?.filename,
           file.content?.buffer.byteLength,
         );
-        files.set(id, file);
         ctx.response.body = { id, ...file, content: undefined };
 
         fileResponse(id, file);
@@ -99,7 +98,7 @@ app.use(async (ctx: Context) => {
   }
 
   try {
-    const wait = Number(ctx.request.url.searchParams.get("wait")) || 3000;
+    const wait = Number(ctx.request.url.searchParams.get("wait")) || 5000;
     console.log("wait", pathname, wait);
     if (!wait) {
       throw new Error("File not found");
@@ -122,7 +121,7 @@ app.addEventListener(
 await app.listen({ port: 8080 });
 
 // Wait for a missing file
-function fileRequest(pathname: string, timeout = 5000): Promise<FormDataFile> {
+function fileRequest(pathname: string, timeout: number): Promise<FormDataFile> {
   return new Promise((resolve, reject) => {
     const request = requests.get(pathname);
     if (request) {
@@ -144,6 +143,8 @@ function fileRequest(pathname: string, timeout = 5000): Promise<FormDataFile> {
 
 // A file has been received
 function fileResponse(pathname: string, file: FormDataFile) {
+  files.set(pathname, file);
+
   const waiting = requests.get(pathname);
   if (waiting) {
     console.log("backfill", pathname, waiting.resolves.length);
