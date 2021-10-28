@@ -35,6 +35,17 @@ const app = new Application();
 app.use(async (ctx: Context) => {
   const pathname = ctx.request.url.pathname;
 
+  const origin = ctx.request.headers.get("origin");
+  if (origin) {
+    ctx.response.headers.set("Access-Control-Allow-Origin", origin);
+    ctx.response.headers.set("Access-Control-Max-Age", "3600");
+    if (ctx.request.method === "OPTIONS") {
+      ctx.response.status = 204;
+      ctx.response.body = "";
+      return;
+    }
+  }
+
   if (ctx.request.method === "POST") {
     console.log("uploading", pathname);
     try {
