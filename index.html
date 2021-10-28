@@ -5,6 +5,9 @@
     <meta content="width=device-width" name="viewport" />
     <meta content="#f69" name="theme-color" />
     <style>
+      * {
+        box-sizing: border-box;
+      }
       body {
         background: black;
         color: white;
@@ -26,12 +29,10 @@
 
       form {
         position: relative;
-        padding: 2em;
         margin-bottom: 1em;
         line-height: 2em;
         border: 2px solid #444;
         border-radius: 4px;
-        padding: 0.5em;
         width: 100%;
         background: none;
         color: inherit;
@@ -39,11 +40,31 @@
         box-sizing: border-box;
         resize: vertical;
       }
-      object {
+
+      .preview {
+        border-radius: 2px 2px 0 0;
+        overflow: hidden;
+        background-color: white;
+      }
+      img {
         display: block;
+        margin: -1em -1em 1em;
         min-height: 100px;
         min-width: 100px;
-        background-color: white;
+        max-width: 100%;
+        max-height: 300px;
+        object-fit: contain;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: 300px;
+        border: 0;
+      }
+
+      .upload {
+        position: relative;
+        padding: 1em;
       }
       label {
         font-family: consolas, monospace;
@@ -74,19 +95,30 @@
         v-for="(target, t) in targets"
         :action="target"
       >
-        <object :data="target" v-if="status?.files.includes(target)"></object>
-        <label :for="'file' + t" class="fill"></label>
-        <label :for="'file' + t"
-          >Upload file to {{target === '/' ? 'random' : target}}</label
-        >
-        <input
-          type="file"
-          name="data"
-          :id="'file' + t"
-          rows="3"
-          @change="submit(target, $event)"
-          placeholder="Example"
-        />
+        <div class="preview">
+          <img :src="target" v-if="type(target)==='img'" />
+          <iframe
+            :src="target + '?type=text'"
+            v-else-if="type(target)==='iframe'"
+          ></iframe>
+          <div v-else-if="!type(target)"></div>
+          <div v-else>Content type: {{file(target).contentType}}</div>
+        </div>
+
+        <div class="upload">
+          <label :for="'file' + t" class="fill"></label>
+          <label :for="'file' + t"
+            >Upload file to {{target === '/' ? 'random' : target}}</label
+          >
+          <input
+            type="file"
+            name="data"
+            :id="'file' + t"
+            rows="3"
+            @change="submit(target, $event)"
+            placeholder="Example"
+          />
+        </div>
       </form>
       <p>
         Source at
@@ -109,18 +141,27 @@
               '/',
               '/example',
               ...(this.status?.requests || []),
-              ...(this.status?.files || []),
+              ...(this.status?.files.map((f) => f.id) || []),
             ].filter((v, i, a) => a.indexOf(v) === i)
           },
         },
         methods: {
           async submit(target, event) {
-            const body = new FormData(event.target.parentElement)
+            const body = new FormData(event.target.closest('form'))
             // body.append('data', event.target.files[0])
             console.log('ta', target, event, body)
             await fetch(target, { method: 'POST', body })
             this.status = await fetch('/status').then((r) => r.json())
             this.fetchedAt = Date.now()
+          },
+          file(id) {
+            return this.status?.files.find((f) => f.id === id) || {}
+          },
+          type(id) {
+            const file = this.status?.files.find((f) => f.id === id)
+            if (!file) return
+            if (file.contentType?.includes('image')) return 'img'
+            return 'iframe'
           },
         },
         async mounted() {

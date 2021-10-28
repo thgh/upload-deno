@@ -56,10 +56,11 @@ app.use(async (ctx: Context) => {
       // Find the first file
       const file = stream.files?.at(0);
       if (file) {
-        // Save in memory
+        // Confirm id to uploader
         const id = pathname !== "/"
           ? pathname
           : "/" + Math.random().toString(36).slice(2);
+        ctx.response.body = { id, ...file, content: undefined };
         console.log(
           "uploaded",
           id,
@@ -67,8 +68,8 @@ app.use(async (ctx: Context) => {
           file?.filename,
           file.content?.buffer.byteLength,
         );
-        ctx.response.body = { id, ...file, content: undefined };
 
+        // Save in memory and serve to clients
         fileResponse(id, file);
         return;
       } else {
@@ -97,16 +98,21 @@ app.use(async (ctx: Context) => {
   }
   if (pathname === "/status") {
     ctx.response.body = {
-      files: [...files.keys()],
+      files: [...files.entries()].map(([id, file]) => ({
+        ...file,
+        id,
+        content: undefined,
+      })),
       requests: [...requests.keys()],
     };
     return;
   }
 
+  const type = ctx.request.url.searchParams.get("type");
   const file = files.get(pathname);
   if (file) {
     console.log("hit", pathname);
-    ctx.response.type = file.contentType;
+    ctx.response.type = type || file.contentType;
     ctx.response.body = file.content;
     return;
   }
@@ -118,7 +124,7 @@ app.use(async (ctx: Context) => {
       throw new Error("File not found");
     }
     const file = await fileRequest(pathname, wait);
-    ctx.response.type = file.contentType;
+    ctx.response.type = type || file.contentType;
     ctx.response.body = file.content;
   } catch (e) {
     console.log("error", pathname, e.message);
