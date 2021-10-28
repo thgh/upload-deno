@@ -20,7 +20,10 @@ channel.onmessage = (evt: any) => {
     channel.postMessage({ type: "response", pathname, ...files.get(pathname) });
   }
   if (type === "response") fileResponse(pathname, evt.data);
-  console.log("channel", evt.data);
+  console.log("channel", {
+    ...evt.data,
+    content: evt.data.content ? "snip" : undefined,
+  });
 };
 
 // Read static content
