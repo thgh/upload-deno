@@ -76,7 +76,9 @@
       >
         <object :data="target" v-if="status?.files.includes(target)"></object>
         <label :for="'file' + t" class="fill"></label>
-        <label :for="'file' + t">Upload file to {{target}}</label>
+        <label :for="'file' + t"
+          >Upload file to {{target === '/' ? 'random' : target}}</label
+        >
         <input
           type="file"
           name="data"
@@ -104,6 +106,7 @@
           },
           targets() {
             return [
+              '/',
               '/example',
               ...(this.status?.requests || []),
               ...(this.status?.files || []),
